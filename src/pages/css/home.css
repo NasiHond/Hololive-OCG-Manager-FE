@@ -1,0 +1,12 @@
+.home-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* children take full width (navbar stays left) */
+    padding: 0;           /* don't push navbar down */
+}
+
+.home-content {
+    padding: 20px;        /* apply spacing to content only */
+    align-self: center;   /* center content area if you want */
+    width: min(100%, 1100px);
+}
