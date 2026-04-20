@@ -35,7 +35,18 @@ export default function Navbar({ activeItem = "dashboard" }) {
 
     return (
         <div className="navbar">
-            <div className="navbar-logo">
+            <div
+                className="navbar-logo"
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate("/")}
+                onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        navigate("/");
+                    }
+                }}
+            >
                 <img src={SmallIcon} alt="HoloOCG icon" width="125" height="125"/>
             </div>
 
