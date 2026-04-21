@@ -2,29 +2,51 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./css/Navbar.css";
 import SmallIcon from "../assets/HololiveOCGManagerLogo.png";
+import { clearStoredAuthUser, getStoredAuthUser } from "../services/usersApi.js";
 
 export default function Navbar({ activeItem = "dashboard" }) {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef(null);
+    const [authUser, setAuthUser] = useState(() => getStoredAuthUser());
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const userMenuRef = useRef(null);
     const navigate = useNavigate();
 
-    const handleLogin = () => {
-        localStorage.removeItem("user");
-        navigate("/");
-    };
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setAuthUser(getStoredAuthUser());
+        };
+
+        window.addEventListener("storage", handleStorageChange);
+        return () => {
+            window.removeEventListener("storage", handleStorageChange);
+        };
+    }, []);
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsDropdownOpen(false);
+        const handleOutsideClick = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+                setIsUserMenuOpen(false);
             }
         };
 
-        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("mousedown", handleOutsideClick);
         return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("mousedown", handleOutsideClick);
         };
     }, []);
+
+    const handleProfileClick = () => {
+        if (authUser?.id != null) {
+            navigate(`/users/${authUser.id}/`);
+        }
+        setIsUserMenuOpen(false);
+    };
+
+    const handleLogoutClick = () => {
+        clearStoredAuthUser();
+        setAuthUser(null);
+        setIsUserMenuOpen(false);
+        navigate("/");
+    };
 
     const menuItems = [
         { key: "cardlist", label: "Card List", path: "/cardlist" },
@@ -61,9 +83,33 @@ export default function Navbar({ activeItem = "dashboard" }) {
                 </button>
             ))}
 
-            <button id={"login-button"} type="button" onClick={handleLogin}>
-                Login
-            </button>
+            {authUser?.username ? (
+                <div className="user-menu" ref={userMenuRef}>
+                    <button
+                        id={"user-button"}
+                        type="button"
+                        aria-haspopup="menu"
+                        aria-expanded={isUserMenuOpen}
+                        onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
+                    >
+                        {authUser.username}
+                    </button>
+                    {isUserMenuOpen && (
+                        <div className="user-menu-dropdown" role="menu">
+                            <button type="button" role="menuitem" onClick={handleProfileClick}>
+                                Profile
+                            </button>
+                            <button type="button" role="menuitem" onClick={handleLogoutClick}>
+                                Logout
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <button id={"login-button"} type="button" onClick={() => navigate("/login")}>
+                    Login
+                </button>
+            )}
         </div>
     );
 }

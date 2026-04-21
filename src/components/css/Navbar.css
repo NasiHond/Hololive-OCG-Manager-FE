@@ -9,8 +9,40 @@
     gap: 50px;
     height: 125px;
 }
-#login-button
-{
+#login-button,
+#user-button {
     margin-left: auto;
     margin-right: 40px;
+}
+
+.user-menu {
+    margin-left: auto;
+    margin-right: 40px;
+    position: relative;
+}
+
+#user-button {
+    cursor: pointer;
+}
+
+.user-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 140px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+    z-index: 5;
+}
+
+.user-menu-dropdown button {
+    margin: 0;
+    width: 100%;
+    text-align: left;
 }

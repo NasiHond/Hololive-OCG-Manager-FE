@@ -29,7 +29,6 @@ export default function CardList() {
         { value: "rr", label: "RR" },
         { value: "sr", label: "SR" },
         { value: "ur", label: "UR" },
-        // Add real rarity options here later, or load them from the API.
     ];
     const bloomLevelOptions = [
         { value: "", label: "Any bloom level" },
@@ -206,7 +205,7 @@ export default function CardList() {
 
     return (
         <div className="cardlist-layout">
-            <Navbar user={{ name: "John Doe", initials: "JD" }} activeItem="cardlist" />
+            <Navbar activeItem="cardlist" />
             <div className="cardlist-content">
                 <h1>Card List</h1>
                 <div className={"filter-section"}>
