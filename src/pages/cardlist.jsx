@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import "./css/cardlist.css"
 import PlaceholderCardImage from "../assets/test-card.png";
 import { fetchCardsPage, fetchCardsSearchPage } from "../services/cardsApi";
+import {useNavigate} from "react-router-dom";
 
 export default function CardList() {
     //TODO GET COLOURS FROM BACKEND
@@ -14,7 +15,7 @@ export default function CardList() {
         { value: "Blue", label: "Blue" },
         { value: "Purple", label: "Purple" },
         { value: "Yellow", label: "Yellow" },
-        { value: "Neutral", label: "Neutral" },
+        { value: "Colorless", label: "Neutral" },
     ];
     //TODO GET CARD-SETS FROM BACKEND
     const cardSetOptions = [
@@ -61,9 +62,9 @@ export default function CardList() {
     const [hasMore, setHasMore] = useState(true);
     const [hasLoadedInitialPage, setHasLoadedInitialPage] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    const [selectedCardId, setSelectedCardId] = useState(null);
     const sentinelRef = useRef(null);
     const filterDialogRef = useRef(null);
+    const navigate = useNavigate();
 
     const getSubmittedFilters = useCallback((holomem) => {
         const form = filterDialogRef.current?.querySelector(".filter-dialog-form");
@@ -170,7 +171,7 @@ export default function CardList() {
     }, [hasLoadedInitialPage, hasMore, isLoading]);
 
     const handleCardClick = (cardId) => {
-        setSelectedCardId(cardId);
+        navigate("/cards/" + cardId);
     };
 
     const openFilterDialog = () => {
@@ -196,7 +197,6 @@ export default function CardList() {
         setPage(0);
         setHasMore(true);
         setHasLoadedInitialPage(false);
-        setSelectedCardId(null);
         setErrorMessage("");
         setActiveSearch(nextSearch);
         setActiveFilters(nextFilters);
@@ -251,9 +251,6 @@ export default function CardList() {
                 )}
 
                 <div ref={sentinelRef} className="scroll-sentinel" aria-hidden="true" />
-                <p className="selected-card-id" hidden={selectedCardId == null}>
-                    Selected card ID: {selectedCardId}
-                </p>
 
                 <dialog
                     ref={filterDialogRef}

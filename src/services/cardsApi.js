@@ -5,6 +5,22 @@ function toNumber(value, fallback) {
     return Number.isFinite(value) ? value : fallback;
 }
 
+export async function fetchCard(cardId) {
+    const response = await fetch(`${CARDS_ENDPOINT}/${encodeURIComponent(String(cardId))}`, {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        const error = new Error(`Failed to load card (HTTP ${response.status})`);
+        error.status = response.status;
+        throw error;
+    }
+
+    const payload = await response.json();
+    return normalizeCard(payload);
+}
+
 function normalizeCard(rawCard) {
     const id = rawCard?.Id ?? rawCard?.id ?? rawCard?.cardId ?? null;
     const cardId = rawCard?.cardId ?? rawCard?.Id ?? rawCard?.id ?? null;
