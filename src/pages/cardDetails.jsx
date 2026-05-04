@@ -41,6 +41,8 @@ export default function CardDetails() {
 
     const rawCard = card?.raw ?? {};
     const arts = Array.isArray(rawCard?.arts) ? rawCard.arts : [];
+    const tags = Array.isArray(rawCard?.tags) ? rawCard.tags : [];
+    const keywords = Array.isArray(rawCard?.keywords) ? rawCard.keywords : [];
 
     const displayValue = (value) => {
         if (value === null || value === undefined || value === "") {
@@ -87,6 +89,18 @@ export default function CardDetails() {
                         <dt>HP</dt>
                         <dd>{displayValue(rawCard.hp)}</dd>
 
+                        <dt>Keywords</dt>
+                            <div className="keywords-list">
+                                {keywords.map((keyword, index) => (
+                                    <li key={keyword?.id ?? index} className="keyword-item">
+                                        <div className="keyword-header">
+                                            <h3>{keyword?.name || `Tag ${index + 1}`}</h3>
+                                            <p>Type: {keyword.type}</p>
+                                            <p>Effect: {keyword.effect}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </div>
                         <dt>Rarity</dt>
                         <dd>{displayValue(rawCard.rarity)}</dd>
 
@@ -95,6 +109,21 @@ export default function CardDetails() {
 
                         <dt>Extra Effect</dt>
                         <dd>{displayValue(rawCard.extraEffect)}</dd>
+
+                        <dt>Tags</dt>
+                            {tags.length === 0 ? (
+                                <p>No tags.</p>
+                            ) : (
+                                <div className="tags-list">
+                                    {tags.map((tag, index) => (
+                                        <li key={tag?.id ?? index} className="tag-item">
+                                            <div className="tag-header">
+                                                <p>{tag?.name || `Tag ${index + 1}`}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </div>
+                            )}
                     </dl>
 
                     <section className="card-arts">

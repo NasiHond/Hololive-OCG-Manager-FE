@@ -27,7 +27,7 @@ function normalizeCollectionCard(rawCard) {
 }
 
 export async function fetchCollection(
-    collectionId,
+    userId,
     { page = 0, size = 20, signal } = {}
 ) {
     const params = new URLSearchParams({
@@ -36,7 +36,7 @@ export async function fetchCollection(
     });
 
     const response = await fetch(
-        `${COLLECTIONS_ENDPOINT}/${encodeURIComponent(String(collectionId))}`,
+        `${COLLECTIONS_ENDPOINT}/${encodeURIComponent(String(userId))}`,
         {
             method: "GET",
             headers: getAuthHeaders(),
