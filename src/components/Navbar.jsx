@@ -37,6 +37,8 @@ export default function Navbar({ activeItem = "dashboard" }) {
     const handleProfileClick = () => {
         if (authUser?.id != null) {
             navigate(`/users/${authUser.id}/`);
+        } else {
+            navigate("/");
         }
         setIsUserMenuOpen(false);
     };
@@ -51,7 +53,7 @@ export default function Navbar({ activeItem = "dashboard" }) {
     const menuItems = [
         { key: "cardlist", label: "Card List", path: "/cardlist" },
         { key: "decks", label: "Decks", path: "/decks" },
-        { key: "collection", label: "Collection", path: "/collection" },
+        { key: "collection", label: "Collection", path: "/collections/${authUser.id}/" },
         { key: "news", label: "News", path: "/news" },
     ];
 

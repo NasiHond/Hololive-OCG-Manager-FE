@@ -2,6 +2,7 @@ import { Navigate, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/home.jsx";
 import CardList from "./pages/cardlist.jsx";
 import CardDetails from "./pages/cardDetails.jsx";
+import CardCollection from "./pages/cardCollection.jsx";
 import Login from "./pages/login.jsx"
 import Register from "./pages/registration.jsx"
 import UserPage from "./pages/user.jsx"
@@ -12,6 +13,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/cardlist" element={<CardList />} />
             <Route path="/cards/:cardId" element={<CardDetails />} />
+            <Route path="/collections/:collectionId" element={<CardCollection />} />
             <Route path={"/login"} element={<Login />} />
             <Route path={"/register"} element={<Register />} />
             <Route path="/users/:id/" element={<UserPage />} />

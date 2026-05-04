@@ -1,3 +1,5 @@
+import { getAuthHeaders } from "./usersApi.js";
+
 const CARDS_ENDPOINT = "http://localhost:8080/api/cards";
 const CARD_SEARCH_ENDPOINT = `${CARDS_ENDPOINT}/search`;
 
@@ -8,7 +10,7 @@ function toNumber(value, fallback) {
 export async function fetchCard(cardId) {
     const response = await fetch(`${CARDS_ENDPOINT}/${encodeURIComponent(String(cardId))}`, {
         method: "GET",
-        credentials: "include",
+        headers: getAuthHeaders(),
     });
 
     if (!response.ok) {
@@ -106,7 +108,7 @@ async function fetchCardsCollection(
 
     const response = await fetch(`${endpoint}?${params.toString()}`, {
         method: "GET",
-        credentials: "include",
+        headers: getAuthHeaders(),
         signal,
     });
 
