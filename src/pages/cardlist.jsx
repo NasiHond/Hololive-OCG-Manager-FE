@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
+import CardDetailDialog from "../components/CardDetailDialog";
 import "./css/cardlist.css"
 import PlaceholderCardImage from "../assets/test-card.png";
-import { fetchCardsPage, fetchCardsSearchPage } from "../services/cardsApi";
-import {useNavigate} from "react-router-dom";
+import { fetchCard, fetchCardsPage, fetchCardsSearchPage } from "../services/cardsApi";
 
 export default function CardList() {
+    const storageKey = "cardlistState";
+    const skipInitialLoadRef = useRef(false);
+
     //TODO GET COLOURS FROM BACKEND
     const colourOptions = [
         { value: "", label: "Any colour" },
@@ -62,9 +65,12 @@ export default function CardList() {
     const [hasMore, setHasMore] = useState(true);
     const [hasLoadedInitialPage, setHasLoadedInitialPage] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [detailCardData, setDetailCardData] = useState(null);
+    const [detailCardLoading, setDetailCardLoading] = useState(false);
+    const [detailCardError, setDetailCardError] = useState("");
+    const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
     const sentinelRef = useRef(null);
     const filterDialogRef = useRef(null);
-    const navigate = useNavigate();
 
     const getSubmittedFilters = useCallback((holomem) => {
         const form = filterDialogRef.current?.querySelector(".filter-dialog-form");
@@ -138,6 +144,57 @@ export default function CardList() {
     }, []);
 
     useEffect(() => {
+        const raw = sessionStorage.getItem(storageKey);
+        if (!raw) {
+            return;
+        }
+
+        try {
+            const saved = JSON.parse(raw);
+            const savedFilters = saved?.activeFilters;
+            const savedSearchInput = saved?.searchInput;
+            const savedSearch = saved?.activeSearch;
+
+            if (savedFilters || savedSearchInput || savedSearch) {
+                setActiveFilters(savedFilters ?? {
+                    bloomLvl: "",
+                    colour: "",
+                    cardSet: "",
+                    rarity: "",
+                    cardType: "",
+                    parallel: "",
+                    holomem: "",
+                });
+                setSearchInput(typeof savedSearchInput === "string" ? savedSearchInput : "");
+                setActiveSearch(typeof savedSearch === "string" ? savedSearch : "");
+                skipInitialLoadRef.current = true;
+            }
+        } catch (error) {
+            console.warn("Failed to restore card list filters.", error);
+        }
+    }, []);
+
+    const saveListState = useCallback(() => {
+        const payload = {
+            activeSearch,
+            activeFilters,
+            searchInput,
+        };
+        sessionStorage.setItem(storageKey, JSON.stringify(payload));
+    }, [activeSearch, activeFilters, searchInput]);
+
+    useEffect(() => {
+        return () => {
+            saveListState();
+        };
+    }, [saveListState]);
+
+    useEffect(() => {
+        if (skipInitialLoadRef.current) {
+            skipInitialLoadRef.current = false;
+            return;
+        }
+
         const controller = new AbortController();
         loadPage(page, activeFilters, controller.signal);
         return () => {
@@ -170,8 +227,26 @@ export default function CardList() {
         };
     }, [hasLoadedInitialPage, hasMore, isLoading]);
 
-    const handleCardClick = (cardId) => {
-        navigate("/cards/" + cardId);
+    const handleCardClick = async (cardId) => {
+        setIsDetailDialogOpen(true);
+        setDetailCardLoading(true);
+        setDetailCardError("");
+        setDetailCardData(null);
+
+        try {
+            const cardData = await fetchCard(cardId);
+            setDetailCardData(cardData);
+        } catch (error) {
+            setDetailCardError(error?.message ?? "Failed to load card details.");
+        } finally {
+            setDetailCardLoading(false);
+        }
+    };
+
+    const handleBackFromCardDetail = () => {
+        setIsDetailDialogOpen(false);
+        setDetailCardData(null);
+        setDetailCardError("");
     };
 
     const openFilterDialog = () => {
@@ -241,6 +316,14 @@ export default function CardList() {
                         </button>
                     ))}
                 </div>
+
+                <CardDetailDialog
+                    isOpen={isDetailDialogOpen}
+                    detailCardData={detailCardData}
+                    detailCardLoading={detailCardLoading}
+                    detailCardError={detailCardError}
+                    onBack={handleBackFromCardDetail}
+                />
 
                 {errorMessage && (
                     <p className="cardlist-status cardlist-error">{errorMessage}</p>
@@ -320,4 +403,3 @@ export default function CardList() {
         </div>
     )
 }
-

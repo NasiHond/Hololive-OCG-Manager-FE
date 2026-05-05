@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
+import CardDetailDialog from "../components/CardDetailDialog";
 import "./css/cardlist.css"
 import PlaceholderCardImage from "../assets/test-card.png";
 import { fetchCollection } from "../services/collectionApi.js";
@@ -81,6 +82,7 @@ export default function CardList() {
     const sentinelRef = useRef(null);
     const filterDialogRef = useRef(null);
     const addCardDialogRef = useRef(null);
+    const addCardSentinelRef = useRef(null);
     const [addCardCards, setAddCardCards] = useState([]);
     const [addCardPage, setAddCardPage] = useState(0);
     const [addCardSearchInput, setAddCardSearchInput] = useState("");
@@ -88,13 +90,13 @@ export default function CardList() {
     const [addCardIsLoading, setAddCardIsLoading] = useState(false);
     const [addCardHasMore, setAddCardHasMore] = useState(true);
     const [addCardErrorMessage, setAddCardErrorMessage] = useState("");
+    const [addCardUserScrolled, setAddCardUserScrolled] = useState(false);
     const [isAddCardDialogOpen, setIsAddCardDialogOpen] = useState(false);
     const [dialogViewType, setDialogViewType] = useState("list"); // "list" or "detail"
     const [detailCardData, setDetailCardData] = useState(null);
     const [detailCardLoading, setDetailCardLoading] = useState(false);
     const [detailCardError, setDetailCardError] = useState("");
     const [savedDialogScrollPosition, setSavedDialogScrollPosition] = useState(0);
-    const dialogResultsRef = useRef(null);
     const navigate = useNavigate();
 
     const getSubmittedFilters = useCallback((holomem) => {
@@ -139,6 +141,7 @@ export default function CardList() {
         .filter(Boolean)
         .join(" | ");
 
+    //load collection
     const loadPage = useCallback(async (pageToLoad, searchFilters, signal) => {
         setIsLoading(true);
         setErrorMessage("");
@@ -173,6 +176,7 @@ export default function CardList() {
         }
     }, [collectionId]);
 
+    //load card page for dialog
     const loadAddCardPage = useCallback(async (pageToLoad, searchFilters, searchInputValue, signal) => {
         setAddCardIsLoading(true);
         setAddCardErrorMessage("");
@@ -187,8 +191,8 @@ export default function CardList() {
                 ? await fetchCardsSearchPage({
                     page: pageToLoad,
                     size: 12,
-                    cardName: trimmedSearch,
                     ...searchFilters,
+                    holomem: trimmedSearch,
                     signal,
                 })
                 : await fetchCardsPage({ page: pageToLoad, size: 12, signal });
@@ -248,7 +252,7 @@ export default function CardList() {
                     setPage((currentPage) => currentPage + 1);
                 }
             },
-            { rootMargin: "300px 0px" }
+            { rootMargin: "500px 0px" }
         );
 
         observer.observe(target);
@@ -257,13 +261,73 @@ export default function CardList() {
         };
     }, [hasLoadedInitialPage, hasMore, isLoading]);
 
+    useEffect(() => {
+        if (!isAddCardDialogOpen || dialogViewType !== "list") {
+            setAddCardUserScrolled(false);
+            return;
+        }
+
+        const dialogElement = addCardDialogRef.current;
+        if (!dialogElement) {
+            return;
+        }
+
+        const handleScroll = () => {
+            if (dialogElement.scrollTop > 0) {
+                setAddCardUserScrolled(true);
+            }
+        };
+
+        dialogElement.addEventListener("scroll", handleScroll);
+        return () => {
+            dialogElement.removeEventListener("scroll", handleScroll);
+        };
+    }, [isAddCardDialogOpen, dialogViewType]);
+
+    useEffect(() => {
+        if (!isAddCardDialogOpen || dialogViewType !== "list" || !addCardHasMore || addCardIsLoading) {
+            return;
+        }
+
+        if (!addCardUserScrolled || addCardCards.length === 0) {
+            return;
+        }
+
+        const dialogElement = addCardDialogRef.current;
+        const target = addCardSentinelRef.current;
+        if (!dialogElement || !target || dialogElement.scrollHeight <= dialogElement.clientHeight) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    setAddCardPage((currentPage) => currentPage + 1);
+                }
+            },
+            { root: dialogElement, rootMargin: "200px 0px" }
+        );
+
+        observer.observe(target);
+        return () => {
+            observer.disconnect();
+        };
+    }, [
+        isAddCardDialogOpen,
+        dialogViewType,
+        addCardHasMore,
+        addCardIsLoading,
+        addCardCards.length,
+        addCardUserScrolled,
+    ]);
+
     // Restore scroll position when returning to list view from detail view
     useEffect(() => {
-        if (dialogViewType === "list" && savedDialogScrollPosition > 0) {
-            // Use setTimeout to ensure the DOM has fully updated
+        if (dialogViewType === "list") {
             const timer = setTimeout(() => {
-                if (dialogResultsRef.current) {
-                    dialogResultsRef.current.scrollTop = savedDialogScrollPosition;
+                const dialogElement = addCardDialogRef.current;
+                if (dialogElement) {
+                    dialogElement.scrollTop = savedDialogScrollPosition;
                 }
             }, 0);
             return () => clearTimeout(timer);
@@ -334,16 +398,11 @@ export default function CardList() {
         resetAddCardResults();
     };
 
-    const handleLoadMoreAddCards = () => {
-        if (!addCardIsLoading && addCardHasMore) {
-            setAddCardPage((currentPage) => currentPage + 1);
-        }
-    };
-
     const handleAddCardTileClick = async (cardId) => {
         // Save scroll position before transitioning
-        if (dialogResultsRef.current) {
-            setSavedDialogScrollPosition(dialogResultsRef.current.scrollTop);
+        const dialogElement = addCardDialogRef.current;
+        if (dialogElement) {
+            setSavedDialogScrollPosition(dialogElement.scrollTop);
         }
 
         // Switch to detail view
@@ -426,11 +485,9 @@ export default function CardList() {
                                 src={card.imageUrl || PlaceholderCardImage}
                                 alt={card.name}
                             />
+                            <span className={"card-count-overlay"}>{card.cardCount}</span>
                             <span className="card-name-overlay">
                                 {card.name} - {card.cardId}
-                                {card.cardCount && card.cardCount > 1 && (
-                                    <span className="card-count"> x{card.cardCount}</span>
-                                )}
                             </span>
                         </button>
                     ))}
@@ -570,7 +627,7 @@ export default function CardList() {
                         )}
 
                         {dialogViewType === "list" ? (
-                            <div className="card-results cardlist-dialog-results" ref={dialogResultsRef}>
+                            <div className="card-results cardlist-dialog-results">
                                 {addCardCards.map((card) => (
                                     <button
                                         key={`add-card-${card.id ?? card.name}`}
@@ -591,113 +648,16 @@ export default function CardList() {
                                         </span>
                                     </button>
                                 ))}
+                                <div ref={addCardSentinelRef} className="scroll-sentinel" aria-hidden="true" />
                             </div>
                         ) : (
-                            <div className="cardlist-dialog-detail" ref={dialogResultsRef}>
-                                <div className="cardlist-dialog-detail-header">
-                                    <button
-                                        type="button"
-                                        className="cardlist-dialog-back-btn"
-                                        onClick={handleBackFromCardDetail}
-                                        aria-label="Back to card list"
-                                    >
-                                        ← Back
-                                    </button>
-                                </div>
-
-                                {detailCardError && <p className="cardlist-status cardlist-error">{detailCardError}</p>}
-                                {detailCardLoading && <p className="cardlist-status">Loading card details...</p>}
-
-                                {detailCardData && (
-                                    <div className="cardlist-dialog-detail-content">
-                                        <img
-                                            src={detailCardData?.imageUrl || PlaceholderCardImage}
-                                            alt={detailCardData?.name || "Card image"}
-                                            className="cardlist-dialog-detail-image"
-                                        />
-                                        <div className="cardlist-dialog-detail-info">
-                                            <h2>{detailCardData?.name || "Card details"}</h2>
-
-                                            <dl className="cardlist-dialog-detail-specs">
-                                                <dt>Card ID</dt>
-                                                <dd>{detailCardData?.raw?.cardId ?? detailCardData?.cardId ?? "-"}</dd>
-
-                                                <dt>Card Set</dt>
-                                                <dd>{detailCardData?.raw?.cardSet ?? "-"}</dd>
-
-                                                <dt>Type</dt>
-                                                <dd>{detailCardData?.raw?.cardTypeName ?? "-"}</dd>
-
-                                                <dt>Colour</dt>
-                                                <dd>{detailCardData?.raw?.cardColour ?? "-"}</dd>
-
-                                                <dt>Holomem</dt>
-                                                <dd>{detailCardData?.raw?.holomem ?? "-"}</dd>
-
-                                                <dt>Bloom Level</dt>
-                                                <dd>{detailCardData?.raw?.bloomLvl ?? "-"}</dd>
-
-                                                <dt>HP</dt>
-                                                <dd>{detailCardData?.raw?.hp ?? "-"}</dd>
-
-                                                <dt>Rarity</dt>
-                                                <dd>{detailCardData?.raw?.rarity ?? "-"}</dd>
-
-                                                <dt>Baton Pass</dt>
-                                                <dd>{detailCardData?.raw?.batonpass ?? "-"}</dd>
-
-                                                <dt>Extra Effect</dt>
-                                                <dd>{detailCardData?.raw?.extraEffect ?? "-"}</dd>
-                                            </dl>
-
-                                            {Array.isArray(detailCardData?.raw?.keywords) && detailCardData.raw.keywords.length > 0 && (
-                                                <div className="cardlist-dialog-detail-section">
-                                                    <h3>Keywords</h3>
-                                                    <ul className="cardlist-dialog-detail-list">
-                                                        {detailCardData.raw.keywords.map((keyword, index) => (
-                                                            <li key={keyword?.id ?? index}>
-                                                                <strong>{keyword?.name || `Keyword ${index + 1}`}</strong>
-                                                                <p>Type: {keyword.type}</p>
-                                                                <p>Effect: {keyword.effect}</p>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-
-                                            {Array.isArray(detailCardData?.raw?.tags) && detailCardData.raw.tags.length > 0 && (
-                                                <div className="cardlist-dialog-detail-section">
-                                                    <h3>Tags</h3>
-                                                    <ul className="cardlist-dialog-detail-list">
-                                                        {detailCardData.raw.tags.map((tag, index) => (
-                                                            <li key={tag?.id ?? index}>{tag?.name || `Tag ${index + 1}`}</li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-
-                                            {Array.isArray(detailCardData?.raw?.arts) && detailCardData.raw.arts.length > 0 && (
-                                                <div className="cardlist-dialog-detail-section">
-                                                    <h3>Arts</h3>
-                                                    <ul className="cardlist-dialog-detail-arts">
-                                                        {detailCardData.raw.arts.map((art, index) => (
-                                                            <li key={art?.id ?? index}>
-                                                                <h4>{art?.name || `Art ${index + 1}`}</h4>
-                                                                <p><strong>Damage:</strong> {art?.damage ?? "-"}</p>
-                                                                {art?.critColourName && <p><strong>Crit:</strong> {art.critColourName}</p>}
-                                                                {Array.isArray(art?.costs) && art.costs.length > 0 && (
-                                                                    <p><strong>Cost:</strong> {art.costs.map(c => c?.amount ?? "?").join(", ")}</p>
-                                                                )}
-                                                                {art?.effect && <p className="cardlist-dialog-detail-effect"><strong>Effect:</strong> {art.effect}</p>}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            <CardDetailDialog
+                                isOpen={dialogViewType === "detail"}
+                                detailCardData={detailCardData}
+                                detailCardLoading={detailCardLoading}
+                                detailCardError={detailCardError}
+                                onBack={handleBackFromCardDetail}
+                            />
                         )}
 
                         {dialogViewType === "list" && (
@@ -708,12 +668,8 @@ export default function CardList() {
                                 )}
 
                                 <div className="cardlist-dialog-footer">
-                                    {addCardHasMore ? (
-                                        <button type="button" onClick={handleLoadMoreAddCards} disabled={addCardIsLoading}>
-                                            {addCardIsLoading ? "Loading..." : "Load more cards"}
-                                        </button>
-                                    ) : (
-                                        addCardCards.length > 0 && <p className="cardlist-status">No more cards to load.</p>
+                                    {!addCardHasMore && addCardCards.length > 0 && (
+                                        <p className="cardlist-status">No more cards to load.</p>
                                     )}
                                 </div>
                             </>
@@ -789,4 +745,10 @@ export default function CardList() {
         </div>
     )
 }
+
+
+
+
+
+
 
