@@ -78,3 +78,24 @@ export async function fetchCollection(
         hasMore,
     };
 }
+
+export async function fetchCollectionCardCount(userId, cardId)
+{
+    const response = await fetch(
+        `${COLLECTIONS_ENDPOINT}/${encodeURIComponent(String(userId))}/${encodeURIComponent(cardId)}`,
+        {
+            method: "GET",
+            headers: getAuthHeaders(),
+        }
+    );
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+        const error = new Error(`Failed to load collection card count (HTTP ${response.status})`);
+        error.status = response.status;
+        throw error;
+    }
+
+    return toNumber(payload?.cardCount, 0);
+}

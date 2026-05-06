@@ -96,6 +96,7 @@ export default function CardList() {
     const [detailCardData, setDetailCardData] = useState(null);
     const [detailCardLoading, setDetailCardLoading] = useState(false);
     const [detailCardError, setDetailCardError] = useState("");
+    const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
     const [savedDialogScrollPosition, setSavedDialogScrollPosition] = useState(0);
     const navigate = useNavigate();
 
@@ -334,8 +335,20 @@ export default function CardList() {
         }
     }, [dialogViewType, savedDialogScrollPosition]);
 
-    const handleCardClick = (cardId) => {
-        navigate("/cards/" + cardId);
+    const handleCardClick = async (cardId) => {
+        setIsDetailDialogOpen(true);
+        setDetailCardLoading(true);
+        setDetailCardError("");
+        setDetailCardData(null);
+
+        try {
+            const cardData = await fetchCard(cardId);
+            setDetailCardData(cardData);
+        } catch (error) {
+            setDetailCardError(error?.message ?? "Failed to load card details.");
+        } finally {
+            setDetailCardLoading(false);
+        }
     };
 
     const openFilterDialog = () => {
@@ -426,6 +439,25 @@ export default function CardList() {
         setDetailCardData(null);
     };
 
+    const handleBackFromStandaloneCardDetail = () => {
+        // Close the standalone card detail dialog completely
+        setIsDetailDialogOpen(false);
+        setDetailCardData(null);
+        setDetailCardLoading(false);
+        setDetailCardError("");
+    };
+
+    const getSelectedCardCollectionAmount = useCallback((cardData) => {
+        if (!cardData) {
+            return 0;
+        }
+
+        const selectedCardId = String(cardData?.id ?? cardData?.cardId ?? "");
+        const matchingCard = cards.find((card) => String(card?.id ?? card?.cardId ?? "") === selectedCardId);
+
+        return Number(matchingCard?.cardCount ?? cardData?.raw?.cardCount ?? cardData?.cardCount ?? 0);
+    }, [cards]);
+
     const handleSearchSubmit = (event) => {
         event.preventDefault();
 
@@ -492,6 +524,15 @@ export default function CardList() {
                         </button>
                     ))}
                 </div>
+
+                <CardDetailDialog
+                    isOpen={isDetailDialogOpen}
+                    detailCardData={detailCardData}
+                    detailCardLoading={detailCardLoading}
+                    detailCardError={detailCardError}
+                    collectionAmount={getSelectedCardCollectionAmount(detailCardData)}
+                    onBack={handleBackFromStandaloneCardDetail}
+                />
 
                 {errorMessage && (
                     <p className="cardlist-status cardlist-error">{errorMessage}</p>
@@ -656,6 +697,7 @@ export default function CardList() {
                                 detailCardData={detailCardData}
                                 detailCardLoading={detailCardLoading}
                                 detailCardError={detailCardError}
+                                collectionAmount={getSelectedCardCollectionAmount(detailCardData)}
                                 onBack={handleBackFromCardDetail}
                             />
                         )}

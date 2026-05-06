@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import "./css/CardDetailDialog.css";
 import PlaceholderCardImage from "../assets/test-card.png";
+import { getStoredAuthUser } from "../services/usersApi.js";
 
 export default function CardDetailDialog({
     detailCardData,
@@ -7,7 +9,37 @@ export default function CardDetailDialog({
     detailCardError,
     onBack,
     isOpen,
+    isLoggedIn,
+    collectionAmount,
 }) {
+    const storedAuthUser = getStoredAuthUser();
+    const hasStoredCollectionAmount = Number.isFinite(Number(collectionAmount));
+    const hasDetailCardAmount = Number.isFinite(Number(detailCardData?.raw?.cardCount ?? detailCardData?.cardCount));
+    const canShowCollectionControls = (isLoggedIn ?? Boolean(storedAuthUser)) && (hasStoredCollectionAmount || hasDetailCardAmount);
+    const initialCollectionAmount = hasStoredCollectionAmount
+        ? Number(collectionAmount)
+        : Number(detailCardData?.raw?.cardCount ?? detailCardData?.cardCount ?? 0);
+    const [collectionAmountInput, setCollectionAmountInput] = useState(String(initialCollectionAmount));
+
+    useEffect(() => {
+        if (!isOpen || !detailCardData) {
+            return;
+        }
+
+        setCollectionAmountInput(String(initialCollectionAmount));
+    }, [isOpen, detailCardData, initialCollectionAmount]);
+
+    const currentCollectionAmount = Number(collectionAmountInput);
+    const showAddButton = canShowCollectionControls && currentCollectionAmount <= 0;
+
+    const handleCollectionAmountChange = (event) => {
+        setCollectionAmountInput(event.target.value);
+    };
+
+    const handleAddCardToCollection = () => {
+        setCollectionAmountInput("1");
+    };
+
     if (!isOpen) {
         return null;
     }
@@ -40,11 +72,37 @@ export default function CardDetailDialog({
 
                     {detailCardData && (
                         <div className="cardlist-dialog-detail-content">
-                            <img
-                                src={detailCardData?.imageUrl || PlaceholderCardImage}
-                                alt={detailCardData?.name || "Card image"}
-                                className="cardlist-dialog-detail-image"
-                            />
+                            <div className="cardlist-dialog-detail-row-section">
+                                <img
+                                    src={detailCardData?.imageUrl || PlaceholderCardImage}
+                                    alt={detailCardData?.name || "Card image"}
+                                    className="cardlist-dialog-detail-image"
+                                />
+                                {canShowCollectionControls && (
+                                    showAddButton ? (
+                                        <button
+                                            type="button"
+                                            className="cardlist-dialog-detail-collection"
+                                            onClick={handleAddCardToCollection}
+                                        >
+                                            Add card to collection
+                                        </button>
+                                    ) : (
+                                        <label className="cardlist-dialog-detail-collection">
+                                            <span>Amount in collection:</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                inputMode="numeric"
+                                                value={collectionAmountInput}
+                                                onChange={handleCollectionAmountChange}
+                                                aria-label="Amount in collection"
+                                            />
+                                        </label>
+                                    )
+                                )}
+                            </div>
                             <div className="cardlist-dialog-detail-info">
                                 <h2>{detailCardData?.name || "Card details"}</h2>
 

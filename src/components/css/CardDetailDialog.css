@@ -34,6 +34,12 @@
 	border-bottom: 1px solid #e0e0e0;
 }
 
+.cardlist-dialog-detail-row-section
+{
+	display: flex;
+	flex-direction: column;
+}
+
 .cardlist-dialog-back-btn {
 	padding: 8px 16px;
 	border: 1px solid #d0d0d0;

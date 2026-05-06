@@ -4,6 +4,8 @@ import CardDetailDialog from "../components/CardDetailDialog";
 import "./css/cardlist.css"
 import PlaceholderCardImage from "../assets/test-card.png";
 import { fetchCard, fetchCardsPage, fetchCardsSearchPage } from "../services/cardsApi";
+import { getStoredAuthUser } from "../services/usersApi.js";
+import { fetchCollectionCardCount } from "../services/collectionApi.js";
 
 export default function CardList() {
     const storageKey = "cardlistState";
@@ -71,6 +73,8 @@ export default function CardList() {
     const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
     const sentinelRef = useRef(null);
     const filterDialogRef = useRef(null);
+    const authUser = getStoredAuthUser();
+    const userId = authUser?.id ?? null;
 
     const getSubmittedFilters = useCallback((holomem) => {
         const form = filterDialogRef.current?.querySelector(".filter-dialog-form");
@@ -228,6 +232,10 @@ export default function CardList() {
     }, [hasLoadedInitialPage, hasMore, isLoading]);
 
     const handleCardClick = async (cardId) => {
+        if (cardId == null) {
+            return;
+        }
+
         setIsDetailDialogOpen(true);
         setDetailCardLoading(true);
         setDetailCardError("");
@@ -235,6 +243,20 @@ export default function CardList() {
 
         try {
             const cardData = await fetchCard(cardId);
+
+            if (userId) {
+                try {
+                    const count = await fetchCollectionCardCount(userId, cardId);
+                    setDetailCardData({ ...cardData, cardCount: count });
+                    return;
+                } catch (error) {
+                    if (error?.status === 404) {
+                        setDetailCardData({ ...cardData, cardCount: 0 });
+                        return;
+                    }
+                }
+            }
+
             setDetailCardData(cardData);
         } catch (error) {
             setDetailCardError(error?.message ?? "Failed to load card details.");
@@ -322,6 +344,7 @@ export default function CardList() {
                     detailCardData={detailCardData}
                     detailCardLoading={detailCardLoading}
                     detailCardError={detailCardError}
+                    collectionAmount={detailCardData?.cardCount}
                     onBack={handleBackFromCardDetail}
                 />
 
