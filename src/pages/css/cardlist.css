@@ -35,6 +35,7 @@
 	border-radius: 8px;
 	overflow: hidden;
 	cursor: pointer;
+	aspect-ratio: 190 / 265;
 }
 
 .card-tile img {
@@ -53,6 +54,25 @@
 	opacity: 0;
 	transition: opacity 0.15s ease-in-out;
 	text-align: left;
+}
+
+.card-count-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 66px;
+	height: 66px;
+	background: rgba(0, 0, 0, 0.72);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	display: flex;
+	align-items: flex-start;
+	justify-content: flex-start;
+	padding: 10px;
+	clip-path: polygon(0 0, 100% 0, 0 100%);
+	text-align: left;
+	z-index: 1;
 }
 
 .card-tile:hover .card-name-overlay,
@@ -148,7 +168,82 @@
 	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
 }
 
+.cardlist-dialog {
+	border: none;
+	border-radius: 12px;
+	padding: 0;
+	width: min(96vw, 1180px);
+	max-height: min(92vh, 980px);
+	background: #fff;
+	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+	overflow: scroll;
+}
+
+.cardlist-dialog-content {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 20px;
+	max-height: 100%;
+	box-sizing: border-box;
+	overflow: auto;
+}
+
+.cardlist-dialog-header h2 {
+	margin: 0 0 6px;
+}
+
+.cardlist-dialog-header p,
+.cardlist-dialog-summary {
+	margin: 0;
+	color: #555;
+}
+
+.cardlist-dialog-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.cardlist-dialog-toolbar input[type="search"] {
+	flex: 1 1 320px;
+	min-width: 0;
+	padding: 10px 12px;
+	border: 1px solid #d0d0d0;
+	border-radius: 8px;
+}
+
+.cardlist-dialog-filters {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.cardlist-dialog-filters label > select {
+	margin-top: 8px;
+	min-width: 220px;
+	padding: 10px 12px;
+	border: 1px solid #d0d0d0;
+	border-radius: 8px;
+}
+
+.cardlist-dialog-results {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 16px;
+}
+
+.cardlist-dialog-footer {
+	display: flex;
+	justify-content: center;
+	padding-top: 4px;
+}
+
 .filter-dialog::backdrop {
 	background: rgba(0, 0, 0, 0.45);
 }
 
+.cardlist-dialog::backdrop {
+	background: rgba(0, 0, 0, 0.45);
+}

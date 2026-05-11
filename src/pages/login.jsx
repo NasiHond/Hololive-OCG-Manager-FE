@@ -19,13 +19,18 @@ export default function Login()
 
         try {
             const response = await loginUser({ identifier, password });
+            const storedAuthUser = storeAuthUser(response);
 
-            if (response.authenticated && response.username && response.id != null) {
-                storeAuthUser(response);
-                navigate(`/users/${response.id}/`);
-            } else {
-                setError(response.message || "Login failed. Please try again.");
+            if (storedAuthUser.accessToken) {
+                if (storedAuthUser.id != null) {
+                    navigate(`/users/${storedAuthUser.id}/`);
+                } else {
+                    navigate("/");
+                }
+                return;
             }
+
+            setError(response.message || "Login failed. Please try again.");
         } catch (err) {
             setError(err.message || "An error occurred during login. Please try again.");
         } finally {

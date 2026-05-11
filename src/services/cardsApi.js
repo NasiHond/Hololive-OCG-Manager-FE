@@ -1,8 +1,26 @@
+import { getAuthHeaders } from "./usersApi.js";
+
 const CARDS_ENDPOINT = "http://localhost:8080/api/cards";
 const CARD_SEARCH_ENDPOINT = `${CARDS_ENDPOINT}/search`;
 
 function toNumber(value, fallback) {
     return Number.isFinite(value) ? value : fallback;
+}
+
+export async function fetchCard(cardId) {
+    const response = await fetch(`${CARDS_ENDPOINT}/${encodeURIComponent(String(cardId))}`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+        const error = new Error(`Failed to load card (HTTP ${response.status})`);
+        error.status = response.status;
+        throw error;
+    }
+
+    const payload = await response.json();
+    return normalizeCard(payload);
 }
 
 function normalizeCard(rawCard) {
@@ -90,7 +108,7 @@ async function fetchCardsCollection(
 
     const response = await fetch(`${endpoint}?${params.toString()}`, {
         method: "GET",
-        credentials: "include",
+        headers: getAuthHeaders(),
         signal,
     });
 

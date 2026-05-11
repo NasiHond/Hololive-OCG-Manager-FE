@@ -20,13 +20,18 @@ export default function Register()
 
         try {
             const response = await registerUser({ username, email, password });
+            const storedAuthUser = storeAuthUser(response);
 
-            if (response.username && response.id != null) {
-                storeAuthUser(response);
-                navigate(`/users/${response.id}/`);
-            } else {
-                setError(response.message || "Registration failed. Please try again.");
+            if (storedAuthUser.accessToken || storedAuthUser.id != null) {
+                if (storedAuthUser.id != null) {
+                    navigate(`/users/${storedAuthUser.id}/`);
+                } else {
+                    navigate("/");
+                }
+                return;
             }
+
+            setError(response.message || "Registration failed. Please try again.");
         } catch (err) {
             setError(err.message || "An error occurred during registration. Please try again.");
         } finally {

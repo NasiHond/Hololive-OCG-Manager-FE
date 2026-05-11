@@ -1,8 +1,8 @@
 button {
     border-radius: 15px;
-    background-color: var(--root-bg);
+    background-color: #b0d7ec;
+    border: 1px solid black;
     transition: background-color 0.16s ease-in-out;
-    border: none;
     height: 65px;
     width: 200px;
     font-size: 1.2em;
