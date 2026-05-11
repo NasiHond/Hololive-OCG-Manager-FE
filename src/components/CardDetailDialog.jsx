@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./css/CardDetailDialog.css";
 import PlaceholderCardImage from "../assets/test-card.png";
 import { getStoredAuthUser } from "../services/usersApi.js";
+import { updateCollectionCard } from "../services/collectionApi.js";
 
 export default function CardDetailDialog({
     detailCardData,
@@ -11,6 +12,7 @@ export default function CardDetailDialog({
     isOpen,
     isLoggedIn,
     collectionAmount,
+    onCollectionAmountUpdated,
 }) {
     const storedAuthUser = getStoredAuthUser();
     const hasStoredCollectionAmount = Number.isFinite(Number(collectionAmount));
@@ -33,11 +35,44 @@ export default function CardDetailDialog({
     const showAddButton = canShowCollectionControls && currentCollectionAmount <= 0;
 
     const handleCollectionAmountChange = (event) => {
-        setCollectionAmountInput(event.target.value);
+        const nextValue = event.target.value;
+        setCollectionAmountInput(nextValue);
+
+        const userId = getStoredAuthUser()?.id;
+        const cardId = detailCardData?.raw?.id ?? detailCardData?.id;
+        const nextCount = Number(nextValue);
+
+        if (!userId || !cardId || !Number.isFinite(nextCount)) {
+            return;
+        }
+
+        updateCollectionCard(userId, cardId, userId, nextCount)
+            .then(() => {
+                if (typeof onCollectionAmountUpdated === "function") {
+                    onCollectionAmountUpdated(cardId, nextCount, detailCardData);
+                }
+            })
+            .catch((error) => console.error(error));
     };
 
     const handleAddCardToCollection = () => {
-        setCollectionAmountInput("1");
+        const nextCount = 1;
+        setCollectionAmountInput(String(nextCount));
+
+        const userId = getStoredAuthUser()?.id;
+        const cardId = detailCardData?.raw?.id ?? detailCardData?.id;
+
+        if (!userId || !cardId) {
+            return;
+        }
+
+        updateCollectionCard(userId, cardId, userId, nextCount)
+            .then(() => {
+                if (typeof onCollectionAmountUpdated === "function") {
+                    onCollectionAmountUpdated(cardId, nextCount, detailCardData);
+                }
+            })
+            .catch((error) => console.error(error));
     };
 
     if (!isOpen) {

@@ -99,3 +99,32 @@ export async function fetchCollectionCardCount(userId, cardId)
 
     return toNumber(payload?.cardCount, 0);
 }
+
+export async function updateCollectionCard(userId, cardId, collectionId, amount)
+{
+    const response = await fetch(
+        `${COLLECTIONS_ENDPOINT}/${encodeURIComponent(String(userId))}/cards`,
+        {
+            method: "PUT",
+            headers: {
+                ...getAuthHeaders(),
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                collectionId: collectionId,
+                cardId: cardId,
+                amount: amount,
+            }),
+        }
+    );
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+        const error = new Error(`Failed to update collection card (HTTP ${response.status})`);
+        error.status = response.status;
+        throw error;
+    }
+
+    return (payload?.message);
+}

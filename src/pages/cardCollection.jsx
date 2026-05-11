@@ -447,6 +447,66 @@ export default function CardList() {
         setDetailCardError("");
     };
 
+    const handleCollectionAmountUpdated = useCallback((updatedCardId, nextAmount, updatedCardData) => {
+        let previousAmount = 0;
+        let hadMatch = false;
+
+        setCards((previousCards) => {
+            const nextCards = [];
+            const targetCardId = String(updatedCardId ?? "");
+
+            for (const card of previousCards) {
+                const currentCardId = String(card?.id ?? card?.cardId ?? "");
+                if (currentCardId !== targetCardId) {
+                    nextCards.push(card);
+                    continue;
+                }
+
+                hadMatch = true;
+                previousAmount = Number(card?.cardCount ?? 0);
+
+                if (nextAmount > 0) {
+                    nextCards.push({
+                        ...card,
+                        cardCount: nextAmount,
+                    });
+                }
+            }
+
+            if (!hadMatch && nextAmount > 0 && updatedCardData) {
+                nextCards.unshift({
+                    id: updatedCardData?.raw?.id ?? updatedCardData?.id ?? null,
+                    cardId: updatedCardData?.raw?.cardId ?? updatedCardData?.cardId ?? null,
+                    name: updatedCardData?.name ?? "Unknown card",
+                    imageUrl: updatedCardData?.imageUrl ?? "",
+                    cardCount: nextAmount,
+                });
+            }
+
+            return nextCards;
+        });
+
+        if (!hadMatch && !(nextAmount > 0 && updatedCardData)) {
+            return;
+        }
+
+        setCollection((previousCollection) => {
+            if (!previousCollection) {
+                return previousCollection;
+            }
+
+            const delta = nextAmount - previousAmount;
+            const wasPresent = previousAmount > 0;
+            const isPresent = nextAmount > 0;
+
+            return {
+                ...previousCollection,
+                totalCount: Number(previousCollection.totalCount ?? 0) + delta,
+                totalCards: Number(previousCollection.totalCards ?? 0) + (wasPresent === isPresent ? 0 : (isPresent ? 1 : -1)),
+            };
+        });
+    }, []);
+
     const getSelectedCardCollectionAmount = useCallback((cardData) => {
         if (!cardData) {
             return 0;
@@ -532,6 +592,7 @@ export default function CardList() {
                     detailCardError={detailCardError}
                     collectionAmount={getSelectedCardCollectionAmount(detailCardData)}
                     onBack={handleBackFromStandaloneCardDetail}
+                    onCollectionAmountUpdated={handleCollectionAmountUpdated}
                 />
 
                 {errorMessage && (
@@ -699,6 +760,7 @@ export default function CardList() {
                                 detailCardError={detailCardError}
                                 collectionAmount={getSelectedCardCollectionAmount(detailCardData)}
                                 onBack={handleBackFromCardDetail}
+                                onCollectionAmountUpdated={handleCollectionAmountUpdated}
                             />
                         )}
 
@@ -787,10 +849,4 @@ export default function CardList() {
         </div>
     )
 }
-
-
-
-
-
-
 
