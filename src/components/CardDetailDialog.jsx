@@ -3,6 +3,7 @@ import "./css/CardDetailDialog.css";
 import PlaceholderCardImage from "../assets/test-card.png";
 import { getStoredAuthUser } from "../services/usersApi.js";
 import { updateCollectionCard } from "../services/collectionApi.js";
+import { validateToken } from "../services/authApi.js";
 
 export default function CardDetailDialog({
     detailCardData,
@@ -17,7 +18,10 @@ export default function CardDetailDialog({
     const storedAuthUser = getStoredAuthUser();
     const hasStoredCollectionAmount = Number.isFinite(Number(collectionAmount));
     const hasDetailCardAmount = Number.isFinite(Number(detailCardData?.raw?.cardCount ?? detailCardData?.cardCount));
-    const canShowCollectionControls = (isLoggedIn ?? Boolean(storedAuthUser)) && (hasStoredCollectionAmount || hasDetailCardAmount);
+    const [isTokenValid, setIsTokenValid] = useState(null);
+
+    const effectiveAuth = isTokenValid === null ? (isLoggedIn ?? Boolean(storedAuthUser)) : Boolean(isTokenValid);
+    const canShowCollectionControls = effectiveAuth && (hasStoredCollectionAmount || hasDetailCardAmount);
     const initialCollectionAmount = hasStoredCollectionAmount
         ? Number(collectionAmount)
         : Number(detailCardData?.raw?.cardCount ?? detailCardData?.cardCount ?? 0);
@@ -30,6 +34,25 @@ export default function CardDetailDialog({
 
         setCollectionAmountInput(String(initialCollectionAmount));
     }, [isOpen, detailCardData, initialCollectionAmount]);
+
+    // Validate token when the dialog is opened. Cache the boolean in component state.
+    useEffect(() => {
+        if (!isOpen) return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const valid = await validateToken();
+                if (!cancelled) setIsTokenValid(Boolean(valid));
+            } catch (e) {
+                if (!cancelled) setIsTokenValid(false);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isOpen]);
 
     const currentCollectionAmount = Number(collectionAmountInput);
     const showAddButton = canShowCollectionControls && currentCollectionAmount <= 0;
