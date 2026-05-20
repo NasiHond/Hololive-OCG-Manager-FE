@@ -3,6 +3,7 @@ import HomePage from "./pages/home.jsx";
 import CardList from "./pages/cardlist.jsx";
 import CardDetails from "./pages/cardDetails.jsx";
 import CardCollection from "./pages/cardCollection.jsx";
+import DeckList from "./pages/deckList.jsx";
 import Login from "./pages/login.jsx"
 import Register from "./pages/registration.jsx"
 import UserPage from "./pages/user.jsx"
@@ -14,6 +15,7 @@ function App() {
             <Route path="/cardlist" element={<CardList />} />
             <Route path="/cards/:cardId" element={<CardDetails />} />
             <Route path="/collections/:collectionId" element={<CardCollection />} />
+            <Route path="/decks/:userId" element={<DeckList />} />
             <Route path={"/login"} element={<Login />} />
             <Route path={"/register"} element={<Register />} />
             <Route path="/users/:id/" element={<UserPage />} />

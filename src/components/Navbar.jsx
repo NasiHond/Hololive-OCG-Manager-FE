@@ -52,7 +52,7 @@ export default function Navbar({ activeItem = "dashboard" }) {
 
     const menuItems = [
         { key: "cardlist", label: "Card List", path: "/cardlist" },
-        { key: "decks", label: "Decks", path: "/decks" },
+        { key: "decks", label: "Decks", path: authUser?.id ? `/decks/${authUser.id}/` : "/login" },
         { key: "collection", label: "Collection", path: authUser?.id ? `/collections/${authUser.id}/` : "/login" },
         { key: "news", label: "News", path: "/news" },
     ];
