@@ -9,15 +9,18 @@
     gap: 50px;
     height: 125px;
 }
+.navbar > button.active {
+    background-color: #7fb6d6;
+}
+.navbar .user-menu > button.active {
+    background-color: #7fb6d6;
+}
 #login-button,
 #user-button {
     margin-left: auto;
     margin-right: 40px;
 }
-
 .user-menu {
-    margin-left: auto;
-    margin-right: 40px;
     position: relative;
 }
 
@@ -27,13 +30,10 @@
 
 .user-menu-dropdown {
     position: absolute;
-    right: 0;
     top: calc(100% + 8px);
     display: flex;
     flex-direction: column;
-    gap: 8px;
     min-width: 140px;
-    padding: 10px;
     background: #fff;
     border: 1px solid #d8d8d8;
     border-radius: 8px;
@@ -42,7 +42,17 @@
 }
 
 .user-menu-dropdown button {
-    margin: 0;
-    width: 100%;
-    text-align: left;
+    text-align: center;
+    background: none;
+    border: none;
+    border-radius: 0;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    height: 5vh;
+}
+.user-menu-dropdown button.active {
+    background: #7fb6d6;
+}
+.user-menu-dropdown button:hover {
+    background: #7fb6d6;
 }

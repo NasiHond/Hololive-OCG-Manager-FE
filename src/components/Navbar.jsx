@@ -4,10 +4,12 @@ import "./css/Navbar.css";
 import SmallIcon from "../assets/HololiveOCGManagerLogo.png";
 import { clearStoredAuthUser, getStoredAuthUser } from "../services/usersApi.js";
 
-export default function Navbar({ activeItem = "dashboard" }) {
+export default function Navbar({ activeItem, activeSubItem }) {
     const [authUser, setAuthUser] = useState(() => getStoredAuthUser());
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isDecksMenuOpen, setIsDecksMenuOpen] = useState(false);
     const userMenuRef = useRef(null);
+    const decksMenuRef = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -25,6 +27,9 @@ export default function Navbar({ activeItem = "dashboard" }) {
         const handleOutsideClick = (event) => {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
                 setIsUserMenuOpen(false);
+            }
+            if (decksMenuRef.current && !decksMenuRef.current.contains(event.target)) {
+                setIsDecksMenuOpen(false);
             }
         };
 
@@ -52,10 +57,12 @@ export default function Navbar({ activeItem = "dashboard" }) {
 
     const menuItems = [
         { key: "cardlist", label: "Card List", path: "/cardlist" },
-        { key: "decks", label: "Decks", path: "/decks" },
         { key: "collection", label: "Collection", path: authUser?.id ? `/collections/${authUser.id}/` : "/login" },
         { key: "news", label: "News", path: "/news" },
     ];
+
+    const menuItemsBeforeDecks = menuItems.filter((item) => item.key !== "news");
+    const menuItemsAfterDecks = menuItems.filter((item) => item.key === "news");
 
     return (
         <div className="navbar">
@@ -74,7 +81,7 @@ export default function Navbar({ activeItem = "dashboard" }) {
                 <img src={SmallIcon} alt="HoloOCG icon" width="125" height="125"/>
             </div>
 
-            {menuItems.map((item) => (
+            {menuItemsBeforeDecks.map((item) => (
                 <button
                     key={item.key}
                     type="button"
@@ -85,11 +92,60 @@ export default function Navbar({ activeItem = "dashboard" }) {
                 </button>
             ))}
 
+            <div className="user-menu" ref={decksMenuRef}>
+                <button
+                    type="button"
+                    className={activeItem === "decks" ? "active" : ""}
+                    aria-haspopup="menu"
+                    aria-expanded={isDecksMenuOpen}
+                    onClick={() => setIsDecksMenuOpen((isOpen) => !isOpen)}
+                >
+                    Decks
+                </button>
+                {isDecksMenuOpen && (
+                    <div className="user-menu-dropdown" role="menu">
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className={activeSubItem === "allDecks" ? "active" : ""}
+                            onClick={() => {
+                                setIsDecksMenuOpen(false);
+                                navigate("/decks");
+                            }}
+                        >
+                            Search all decks
+                        </button>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className={activeSubItem === "myDecks" ? "active" : ""}
+                            onClick={() => {
+                                setIsDecksMenuOpen(false);
+                                navigate(authUser?.id ? "/my-decks" : "/login");
+                            }}
+                        >
+                            My decks
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {menuItemsAfterDecks.map((item) => (
+                <button
+                    key={item.key}
+                    type="button"
+                    className={activeItem === item.key ? "active" : ""}
+                    onClick={() => navigate(item.path)}
+                >
+                    {item.label}
+                </button>
+            ))}
             {authUser?.username ? (
                 <div className="user-menu" ref={userMenuRef}>
                     <button
                         id={"user-button"}
                         type="button"
+                        className={activeItem === "user" ? "active" : ""}
                         aria-haspopup="menu"
                         aria-expanded={isUserMenuOpen}
                         onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
@@ -108,7 +164,8 @@ export default function Navbar({ activeItem = "dashboard" }) {
                     )}
                 </div>
             ) : (
-                <button id={"login-button"} type="button" onClick={() => navigate("/login")}>
+                <button id={"login-button"} type="button" onClick={() => navigate("/login")}
+                >
                     Login
                 </button>
             )}

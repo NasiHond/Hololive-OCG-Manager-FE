@@ -6,7 +6,7 @@ export default function UserPage() {
 
     return (
         <div className="user-layout">
-            <Navbar activeItem="" />
+            <Navbar activeItem="user" />
             <div className="user-content">
                 <h1>User Account</h1>
                 <p>Account ID: {id}</p>
