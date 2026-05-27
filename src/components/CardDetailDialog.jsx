@@ -2,38 +2,86 @@ import { useEffect, useState } from "react";
 import "./css/CardDetailDialog.css";
 import PlaceholderCardImage from "../assets/test-card.png";
 import { getStoredAuthUser } from "../services/usersApi.js";
-import { updateCollectionCard } from "../services/collectionApi.js";
+import { updateCollectionCard, fetchCollectionCardCount } from "../services/collectionApi.js";
 import { validateToken } from "../services/authApi.js";
+import { fetchCard } from "../services/cardsApi.js";
+import AddCardToDeckDialog from "./AddCardToDeckDialog.jsx";
 
 export default function CardDetailDialog({
-    detailCardData,
-    detailCardLoading,
-    detailCardError,
+    cardId,
     onBack,
     isOpen,
     isLoggedIn,
-    collectionAmount,
     onCollectionAmountUpdated,
 }) {
+    const [detailCardData, setDetailCardData] = useState(null);
+    const [detailCardLoading, setDetailCardLoading] = useState(false);
+    const [detailCardError, setDetailCardError] = useState(null);
+    const [isAddCardToDeckDialogOpen, setIsAddCardToDeckDialogOpen] = useState(false);
+
     const storedAuthUser = getStoredAuthUser();
-    const hasStoredCollectionAmount = Number.isFinite(Number(collectionAmount));
-    const hasDetailCardAmount = Number.isFinite(Number(detailCardData?.raw?.cardCount ?? detailCardData?.cardCount));
     const [isTokenValid, setIsTokenValid] = useState(null);
 
     const effectiveAuth = isTokenValid === null ? (isLoggedIn ?? Boolean(storedAuthUser)) : Boolean(isTokenValid);
-    const canShowCollectionControls = effectiveAuth && (hasStoredCollectionAmount || hasDetailCardAmount);
-    const initialCollectionAmount = hasStoredCollectionAmount
-        ? Number(collectionAmount)
-        : Number(detailCardData?.raw?.cardCount ?? detailCardData?.cardCount ?? 0);
-    const [collectionAmountInput, setCollectionAmountInput] = useState(String(initialCollectionAmount));
+    const canShowCollectionControls = effectiveAuth && detailCardData;
+    const [collectionAmountInput, setCollectionAmountInput] = useState("0");
+    const authUser = getStoredAuthUser();
+    const userId = authUser?.id ?? null;
 
     useEffect(() => {
-        if (!isOpen || !detailCardData) {
+        if (!isOpen || !cardId) {
+            setDetailCardData(null);
+            setDetailCardError(null);
+            setDetailCardLoading(false);
+            setCollectionAmountInput("0");
             return;
         }
 
-        setCollectionAmountInput(String(initialCollectionAmount));
-    }, [isOpen, detailCardData, initialCollectionAmount]);
+        let cancelled = false;
+
+        const loadCardDetails = async () => {
+            setDetailCardLoading(true);
+            setDetailCardError(null);
+            setCollectionAmountInput("0");
+
+            try {
+                const cardData = await fetchCard(cardId);
+                if (cancelled) {
+                    return;
+                }
+
+                setDetailCardData(cardData);
+
+                if (userId) {
+                    try {
+                        const amount = await fetchCollectionCardCount(userId, cardId);
+                        if (!cancelled) {
+                            setCollectionAmountInput(String(amount));
+                        }
+                    } catch (collectionError) {
+                        if (!cancelled) {
+                            setCollectionAmountInput("0");
+                        }
+                        console.error("Failed to fetch collection count:", collectionError);
+                    }
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setDetailCardError(error?.message ?? "Failed to load card details.");
+                }
+            } finally {
+                if (!cancelled) {
+                    setDetailCardLoading(false);
+                }
+            }
+        };
+
+        loadCardDetails();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isOpen, cardId, userId]);
 
     // Validate token when the dialog is opened. Cache the boolean in component state.
     useEffect(() => {
@@ -61,18 +109,17 @@ export default function CardDetailDialog({
         const nextValue = event.target.value;
         setCollectionAmountInput(nextValue);
 
-        const userId = getStoredAuthUser()?.id;
-        const cardId = detailCardData?.raw?.id ?? detailCardData?.id;
+        const currentCardId = detailCardData?.raw?.id ?? detailCardData?.id;
         const nextCount = Number(nextValue);
 
-        if (!userId || !cardId || !Number.isFinite(nextCount)) {
+        if (!userId || !currentCardId || !Number.isFinite(nextCount)) {
             return;
         }
 
-        updateCollectionCard(userId, cardId, userId, nextCount)
+        updateCollectionCard(userId, currentCardId, userId, nextCount)
             .then(() => {
                 if (typeof onCollectionAmountUpdated === "function") {
-                    onCollectionAmountUpdated(cardId, nextCount, detailCardData);
+                    onCollectionAmountUpdated(currentCardId, nextCount, detailCardData);
                 }
             })
             .catch((error) => console.error(error));
@@ -82,20 +129,27 @@ export default function CardDetailDialog({
         const nextCount = 1;
         setCollectionAmountInput(String(nextCount));
 
-        const userId = getStoredAuthUser()?.id;
-        const cardId = detailCardData?.raw?.id ?? detailCardData?.id;
+        const currentCardId = detailCardData?.raw?.id ?? detailCardData?.id;
 
-        if (!userId || !cardId) {
+        if (!userId || !currentCardId) {
             return;
         }
 
-        updateCollectionCard(userId, cardId, userId, nextCount)
+        updateCollectionCard(userId, currentCardId, userId, nextCount)
             .then(() => {
                 if (typeof onCollectionAmountUpdated === "function") {
-                    onCollectionAmountUpdated(cardId, nextCount, detailCardData);
+                    onCollectionAmountUpdated(currentCardId, nextCount, detailCardData);
                 }
             })
             .catch((error) => console.error(error));
+    };
+
+    const handleAddCardToDeck = () => {
+        setIsAddCardToDeckDialogOpen(true);
+    };
+
+    const handleCloseAddCardToDeck = () => {
+        setIsAddCardToDeckDialogOpen(false);
     };
 
     if (!isOpen) {
@@ -160,6 +214,19 @@ export default function CardDetailDialog({
                                         </label>
                                     )
                                 )}
+                                <button
+                                    type="button"
+                                    className="cardlist-dialog-detail-add-deck-button"
+                                    onClick={handleAddCardToDeck}
+                                >
+                                    Add to deck
+                                </button>
+                                <AddCardToDeckDialog
+                                    isOpen={isAddCardToDeckDialogOpen}
+                                    onClose={handleCloseAddCardToDeck}
+                                    onBack={handleCloseAddCardToDeck}
+                                    card={detailCardData}
+                                />
                             </div>
                             <div className="cardlist-dialog-detail-info">
                                 <h2>{detailCardData?.name || "Card details"}</h2>

@@ -3,9 +3,7 @@ import Navbar from "../components/Navbar";
 import CardDetailDialog from "../components/CardDetailDialog";
 import "./css/cardlist.css"
 import PlaceholderCardImage from "../assets/test-card.png";
-import { fetchCard, fetchCardsPage, fetchCardsSearchPage } from "../services/cardsApi";
-import { getStoredAuthUser } from "../services/usersApi.js";
-import { fetchCollectionCardCount } from "../services/collectionApi.js";
+import { fetchCardsPage, fetchCardsSearchPage } from "../services/cardsApi";
 
 export default function CardList() {
     const storageKey = "cardlistState";
@@ -67,14 +65,10 @@ export default function CardList() {
     const [hasMore, setHasMore] = useState(true);
     const [hasLoadedInitialPage, setHasLoadedInitialPage] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    const [detailCardData, setDetailCardData] = useState(null);
-    const [detailCardLoading, setDetailCardLoading] = useState(false);
-    const [detailCardError, setDetailCardError] = useState("");
     const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+    const [selectedCardId, setSelectedCardId] = useState(null);
     const sentinelRef = useRef(null);
     const filterDialogRef = useRef(null);
-    const authUser = getStoredAuthUser();
-    const userId = authUser?.id ?? null;
 
     const getSubmittedFilters = useCallback((holomem) => {
         const form = filterDialogRef.current?.querySelector(".filter-dialog-form");
@@ -231,44 +225,18 @@ export default function CardList() {
         };
     }, [hasLoadedInitialPage, hasMore, isLoading]);
 
-    const handleCardClick = async (cardId) => {
+    const handleCardClick = (cardId) => {
         if (cardId == null) {
             return;
         }
 
+        setSelectedCardId(cardId);
         setIsDetailDialogOpen(true);
-        setDetailCardLoading(true);
-        setDetailCardError("");
-        setDetailCardData(null);
-
-        try {
-            const cardData = await fetchCard(cardId);
-
-            if (userId) {
-                try {
-                    const count = await fetchCollectionCardCount(userId, cardId);
-                    setDetailCardData({ ...cardData, cardCount: count });
-                    return;
-                } catch (error) {
-                    if (error?.status === 404) {
-                        setDetailCardData({ ...cardData, cardCount: 0 });
-                        return;
-                    }
-                }
-            }
-
-            setDetailCardData(cardData);
-        } catch (error) {
-            setDetailCardError(error?.message ?? "Failed to load card details.");
-        } finally {
-            setDetailCardLoading(false);
-        }
     };
 
     const handleBackFromCardDetail = () => {
         setIsDetailDialogOpen(false);
-        setDetailCardData(null);
-        setDetailCardError("");
+        setSelectedCardId(null);
     };
 
     const openFilterDialog = () => {
@@ -341,10 +309,7 @@ export default function CardList() {
 
                 <CardDetailDialog
                     isOpen={isDetailDialogOpen}
-                    detailCardData={detailCardData}
-                    detailCardLoading={detailCardLoading}
-                    detailCardError={detailCardError}
-                    collectionAmount={detailCardData?.cardCount}
+                    cardId={selectedCardId}
                     onBack={handleBackFromCardDetail}
                 />
 

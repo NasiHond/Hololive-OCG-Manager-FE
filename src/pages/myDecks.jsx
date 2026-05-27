@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
+import { useNavigate } from "react-router-dom";
 import "./css/decklist.css";
 import { fetchDecksFromUser } from "../services/deckApi.js";
 import { getStoredAuthUser } from "../services/usersApi.js";
@@ -7,12 +8,13 @@ import { getStoredAuthUser } from "../services/usersApi.js";
 const missingDeckImage =
     "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='190' height='190' viewBox='0 0 190 190'><rect width='190' height='190' fill='%23ffffff'/><text x='95' y='95' font-family='Arial, sans-serif' font-size='28' fill='%23000000' text-anchor='middle' dominant-baseline='middle'>404</text><text x='95' y='125' font-family='Arial, sans-serif' font-size='12' fill='%23000000' text-anchor='middle' dominant-baseline='middle'>Image Not Found</text></svg>";
 
-export default function Decklist() {
+export default function MyDecks() {
     const [decks, setDecks] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const authUser = getStoredAuthUser();
     const userId = authUser?.id ?? null;
+    const navigate = useNavigate();
 
     const loadDecks = useCallback(async (signal) => {
         if (!userId) {
@@ -37,6 +39,16 @@ export default function Decklist() {
         }
     }, [userId]);
 
+    const handleDeckClick = async (deckId) =>
+    {
+        if (deckId == null)
+        {
+            return;
+        }
+
+        navigate("/decks/" + deckId);
+    }
+
     useEffect(() => {
         const controller = new AbortController();
         loadDecks(controller.signal);
@@ -47,9 +59,9 @@ export default function Decklist() {
 
     return (
         <div className="decklist-layout">
-            <Navbar activeItem="decklist" />
+            <Navbar activeItem="decks" activeSubItem={"myDecks"}/>
             <div className="decklist-content">
-                <h1>Deck List</h1>
+                <h1>My Decks</h1>
                 <p>Showing {totalDecksLabel} decks</p>
 
                 <div className="deck-results">
@@ -59,6 +71,7 @@ export default function Decklist() {
                             type="button"
                             className="deck-tile"
                             data-deck-id={deck.id ?? ""}
+                            onClick={() =>handleDeckClick(deck.id)}
                         >
                             <img
                                 src={deck.deckImageUrl || missingDeckImage}
