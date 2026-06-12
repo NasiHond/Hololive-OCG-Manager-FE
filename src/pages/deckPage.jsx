@@ -3,11 +3,13 @@ import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import AddCardDialog from "../components/AddCardDialog";
 import "./css/decklist.css";
+import { Rating } from 'react-simple-star-rating'
 import PlaceholderCardImage from "../assets/test-card.png";
-import { fetchDeckPage, updateDeckCard } from "../services/deckApi.js";
+import { fetchDeckPage, updateDeckCard, normalizeDeckCard } from "../services/deckApi.js";
 import { getStoredAuthUser } from "../services/usersApi.js";
 import CardDetailDialog from "../components/CardDetailDialog.jsx";
 import { checkDeckLegality } from "../services/deckLegality.js";
+import { connectWebSocket } from "../services/websocket";
 
 const DECK_CARD_UPDATE_DEBOUNCE_MS = 400;
 
@@ -76,6 +78,7 @@ export default function DeckPage() {
     const pendingCardUpdatesRef = useRef(new Map());
     const [isAddCardsDialogOpen, setIsAddCardsDialogOpen] = useState(false);
     const [isLegalityDialogOpen, setIsLegalityDialogOpen] = useState(false);
+    const [rating, setRating] = useState(0)
     const legalityDialogRef = useRef(null);
     const authUser = getStoredAuthUser();
     const isDeckOwner = useMemo(() => {
@@ -163,6 +166,86 @@ export default function DeckPage() {
         dialog.addEventListener("close", handleClose);
         return () => dialog.removeEventListener("close", handleClose);
     }, []);
+
+    const handleDeckUpdate = useCallback((event) => {
+        const authUser = getStoredAuthUser();
+
+        if (event.updatedByUserId === authUser?.id) {
+            return;
+        }
+
+        const updatedCard = event.card;
+
+        switch (event.eventType) {
+
+            case "CARD_UPDATED":
+            case "CARD_ADDED":
+                setCards(existing => {
+
+                    const index = existing.findIndex(
+                        card => card.id === updatedCard.id
+                    );
+
+                    if (index === -1) {
+                        return [
+                            ...existing,
+                            normalizeDeckCard(updatedCard)
+                        ];
+                    }
+
+                    const copy = [...existing];
+
+                    copy[index] =
+                        normalizeDeckCard(updatedCard);
+
+                    return copy;
+                });
+                break;
+
+            case "CARD_REMOVED":
+                setCards(existing =>
+                    existing.filter(
+                        card =>
+                            card.id !== updatedCard.id
+                    )
+                );
+                break;
+
+            default:
+                break;
+        }
+
+    }, []);
+
+    useEffect(() => {
+
+        if (!deckId) {
+            return;
+        }
+
+        let subscription;
+
+        const client = connectWebSocket(() => {
+
+            subscription = client.subscribe(
+                `/topic/decks/${deckId}`,
+                message => {
+
+                    const event =
+                        JSON.parse(message.body);
+
+                    console.log("Received deck update event:", event);
+
+                    handleDeckUpdate(event);
+                }
+            );
+        });
+
+        return () => {
+            subscription?.unsubscribe();
+        };
+
+    }, [deckId, handleDeckUpdate]);
 
     const queueDeckCardUpdate = useCallback((cardId, delta) => {
         if (!deckId || cardId == null) {
@@ -276,6 +359,10 @@ export default function DeckPage() {
         setIsDetailDialogOpen(true);
     }, []);
 
+    const handleRating = (rate) => {
+        setRating(rate)
+    }
+
     const totalUniqueCards = useMemo(() => cards.length, [cards.length]);
     const totalCardCount = useMemo(
         () => cards.reduce((total, card) => total + Number(card?.cardCount ?? 0), 0),
@@ -327,9 +414,16 @@ export default function DeckPage() {
                         <p><strong>Owner:</strong> {deck.ownerName}</p>
                         <p><strong>Visibility:</strong> {deck.visibility ?? "Unknown"}</p>
                         <p><strong>Total Unique Cards:</strong> {totalUniqueCards}</p>
-                        <p><strong>Total Card Count:</strong> {totalCardCount}</p>
+                        <p data-testid={"totalCardCount"}><strong>Total Card Count:</strong> {totalCardCount}</p>
                         <p><strong>Cheer Card Count:</strong> {cheerCardCount}</p>
                         <p><strong>Normal Card Count:</strong> {normalCardCount}</p>
+                        <p><strong>Rating:</strong> <Rating
+                            onClick={handleRating}
+                            readonly={false}
+                            allowFraction={true}
+                            initialValue={4.7}
+                        />
+                        </p>
                         <p
                             className={`deck-legality-status ${hasLegalityIssues ? "deck-legality-error" : "deck-legality-legal"}`}
                             onClick={openLegalityDialog}
@@ -374,7 +468,7 @@ export default function DeckPage() {
                                 src={card.imageUrl || PlaceholderCardImage}
                                 alt={card.name}
                             />
-                            <span className="card-count-overlay">{card.cardCount}</span>
+                            <span className="card-count-overlay" data-testid={`card-count-${card.id}`}>{card.cardCount}</span>
                             {isDeckOwner && (
                                 <span className={"card-options-overlay"}>
                                     <button

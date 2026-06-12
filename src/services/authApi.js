@@ -1,8 +1,9 @@
 // authApi.js
 // Helper to validate the currently stored access token with the backend.
+import { API_BASE_URL } from "./apiConfig.js";
 import { getAuthHeaders, getStoredAccessToken } from "./usersApi.js";
 
-const AUTH_ENDPOINT = "http://localhost:8080/api/auth";
+const AUTH_ENDPOINT = `${API_BASE_URL}/api/auth`;
 
 async function safeParseJson(response) {
     try {

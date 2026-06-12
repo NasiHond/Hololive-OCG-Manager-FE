@@ -1,6 +1,7 @@
 import { getAuthHeaders } from "./usersApi.js";
+import {API_BASE_URL} from "./apiConfig.js";
 
-const DECK_ENDPOINT = "http://localhost:8080/api/decks";
+const DECK_ENDPOINT = `${API_BASE_URL}/api/decks`;
 
 function toNumber(value, fallback) {
     return Number.isFinite(value) ? value : fallback;
@@ -19,7 +20,7 @@ function normalizeDeck(rawDeck) {
     };
 }
 
-function normalizeDeckCard(rawCard) {
+export function normalizeDeckCard(rawCard) {
     const id = rawCard?.id ?? null;
     const deckId = rawCard?.deckId ?? rawCard?.deckID ?? null;
     const cardId = rawCard?.cardID ?? rawCard?.cardId ?? null;

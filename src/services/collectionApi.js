@@ -1,6 +1,7 @@
+import { API_BASE_URL } from "./apiConfig.js";
 import { getAuthHeaders } from "./usersApi.js";
 
-const COLLECTIONS_ENDPOINT = "http://localhost:8080/api/collections";
+const COLLECTIONS_ENDPOINT = `${API_BASE_URL}/api/collections`;
 const COLLECTION_SEARCH_ENDPOINT = `${COLLECTIONS_ENDPOINT}/search`;
 
 function toNumber(value, fallback) {

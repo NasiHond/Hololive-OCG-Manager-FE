@@ -1,5 +1,7 @@
-const USERS_ENDPOINT = "http://localhost:8080/api/users";
-const AUTH_ENDPOINT = "http://localhost:8080/api/auth";
+import { API_BASE_URL } from "./apiConfig.js";
+
+const USERS_ENDPOINT = `${API_BASE_URL}/api/users`;
+const AUTH_ENDPOINT = `${API_BASE_URL}/api/auth`;
 const AUTH_STORAGE_KEY = "authUser";
 const AUTH_ACCESS_TOKEN_KEY = "accessToken";
 const AUTH_REFRESH_TOKEN_KEY = "refreshToken";

@@ -1,6 +1,7 @@
+import { API_BASE_URL } from "./apiConfig.js";
 import { getAuthHeaders } from "./usersApi.js";
 
-const CARDS_ENDPOINT = "http://localhost:8080/api/cards";
+const CARDS_ENDPOINT = `${API_BASE_URL}/api/cards`;
 const CARD_SEARCH_ENDPOINT = `${CARDS_ENDPOINT}/search`;
 
 function toNumber(value, fallback) {
