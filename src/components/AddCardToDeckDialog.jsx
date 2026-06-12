@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { getStoredAuthUser } from "../services/usersApi.js";
-import { fetchDecksFromUser, fetchDeckCardsByCardId } from "../services/deckApi.js";
+import { fetchDecksFromUser, fetchDeckCardsByCardId, updateDeckCard } from "../services/deckApi.js";
+import { toast } from "react-hot-toast";
 
 export default function AddCardToDeckDialog({ card, onBack, isOpen, onClose }) {
     const dialogRef = useRef(null);
@@ -42,6 +43,7 @@ export default function AddCardToDeckDialog({ card, onBack, isOpen, onClose }) {
         const loadDeckDetails = async () => {
             setDeckInfoLoading(true);
             try {
+                //TODO create an endpoint that fetches all decks instead of a page size of 999999999
                 const decks = await fetchDecksFromUser(storedAuthUser?.id, { page: 0, size: 999999999 });
                 if (cancelled) {
                     return;
@@ -122,6 +124,24 @@ export default function AddCardToDeckDialog({ card, onBack, isOpen, onClose }) {
         setQuantity((current) => Math.max(1, current - 1));
     };
 
+    const handleAddToDeck = async (e) => {
+        if (selectedDeckId || card.id) {
+            try {
+                const response = await updateDeckCard(selectedDeckId, card.id, quantity);
+                if (response?.id || response?.deckId) {
+                    toast.success("Card successfully added!");
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    onClose();
+                } else {
+                    toast.error("Failed to add card to deck, please try again later.");
+                }
+            } catch (error) {
+                console.error("Failed to add card to deck:", error);
+                toast.error("Something went wrong.");
+            }
+        }
+    }
+
     return (
         <dialog
             ref={dialogRef}
@@ -185,6 +205,7 @@ export default function AddCardToDeckDialog({ card, onBack, isOpen, onClose }) {
                                 <button type="button" onClick={handleQuantityDecrease}>-</button>
                                 <button type="button" onClick={handleQuantityIncrease}>+</button>
                             </div>
+                            <button type="button" onClick={handleAddToDeck}>Add to deck</button>
                         </div>
 
                         {selectedDeckHasCard && (
